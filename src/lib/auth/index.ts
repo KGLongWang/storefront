@@ -1,5 +1,12 @@
 export type { AuthApiError } from "./auth-api-types";
-export { loginWithBff, confirmAccountWithBff, setPasswordWithBff } from "./bff-client";
+export {
+	loginWithBff,
+	getAuthMethodWithBff,
+	requestOtpWithBff,
+	verifyOtpWithBff,
+	confirmAccountWithBff,
+	setPasswordWithBff,
+} from "./bff-client";
 export {
 	ACCOUNT_CONFIRM_QUERY_PARAM,
 	buildAccountConfirmationRedirectUrl,

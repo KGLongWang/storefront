@@ -34,10 +34,7 @@ export async function logout() {
 	const cookieStore = await cookies();
 
 	for (const cookie of cookieStore.getAll()) {
-		if (!cookie.name.startsWith("checkoutId-") || !cookie.value) {
-			continue;
-		}
-		await Checkout.detachCustomer(cookie.value);
+		if (cookie.name.startsWith("checkoutId-")) cookieStore.delete(cookie.name);
 	}
 
 	await signOutSession();

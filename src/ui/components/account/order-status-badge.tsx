@@ -1,11 +1,10 @@
 import { Circle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { type OrderStatus } from "@/gql/graphql";
 import { orderStatusBadgeStyle } from "./order-status-config";
 import { getCustomerOrderStatusLabel } from "./order-status-labels";
 
 type Props = {
-	status: OrderStatus;
+	status: string;
 	statusDisplay: string;
 	localeSlug: string;
 };

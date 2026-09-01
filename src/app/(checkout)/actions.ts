@@ -7,7 +7,6 @@ import {
 	CheckoutBillingAddressUpdateDocument,
 	CheckoutCompleteDocument,
 	CheckoutCreateDocument,
-	CheckoutCustomerAttachDocument,
 	CheckoutDeliveryMethodUpdateDocument,
 	CheckoutEmailUpdateDocument,
 	CheckoutMetadataUpdateDocument,
@@ -15,7 +14,6 @@ import {
 	CheckoutRemovePromoCodeDocument,
 	CheckoutShippingAddressUpdateDocument,
 	DeliveryOptionsCalculateDocument,
-	RequestPasswordResetDocument,
 	PaymentGatewaysInitializeDocument,
 	TransactionInitializeDocument,
 	TransactionProcessDocument,
@@ -30,8 +28,6 @@ import {
 	type CheckoutCompleteMutationVariables,
 	type CheckoutCreateMutation,
 	type CheckoutCreateMutationVariables,
-	type CheckoutCustomerAttachMutation,
-	type CheckoutCustomerAttachMutationVariables,
 	type CheckoutDeliveryMethodUpdateMutation,
 	type CheckoutDeliveryMethodUpdateMutationVariables,
 	type CheckoutEmailUpdateMutation,
@@ -46,8 +42,6 @@ import {
 	type CheckoutShippingAddressUpdateMutationVariables,
 	type DeliveryOptionsCalculateMutation,
 	type DeliveryOptionsCalculateMutationVariables,
-	type RequestPasswordResetMutation,
-	type RequestPasswordResetMutationVariables,
 	type PaymentGatewaysInitializeMutation,
 	type PaymentGatewaysInitializeMutationVariables,
 	type TransactionInitializeMutation,
@@ -64,7 +58,6 @@ import type {
 	AddressValidationRulesActionResult,
 	CheckoutActionResult,
 	CheckoutCompleteActionResult,
-	CheckoutFieldError,
 	DeliveryOptionsActionResult,
 	PaymentGatewaysInitializeActionResult,
 	SimpleActionResult,
@@ -84,8 +77,8 @@ import { getCheckoutServerTranslations } from "@/checkout/lib/server/get-checkou
 import { toCheckoutActionResult } from "@/checkout/lib/server/mutation-result";
 import { toTypedDocument } from "@/checkout/lib/server/to-typed-document";
 import { checkoutGraphqlLanguageCode } from "@/lib/checkout-locale";
-import { isAllowedRedirectUrl } from "@/lib/auth/validate-redirect-url";
-import { executeAuthenticatedGraphQL, executePublicGraphQL, executeRawGraphQL } from "@/lib/graphql";
+import { attachAibibuStoreCheckout, createAibibuStoreCheckout } from "@/lib/auth/aibibu-server-session";
+import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql";
 import * as Checkout from "@/lib/checkout";
 import { saveCheckoutId } from "@/app/actions";
 
@@ -103,11 +96,6 @@ const checkoutShippingAddressUpdateDocument = toTypedDocument<
 	CheckoutShippingAddressUpdateMutation,
 	CheckoutShippingAddressUpdateMutationVariables
 >(CheckoutShippingAddressUpdateDocument);
-
-const checkoutCustomerAttachDocument = toTypedDocument<
-	CheckoutCustomerAttachMutation,
-	CheckoutCustomerAttachMutationVariables
->(CheckoutCustomerAttachDocument);
 
 const checkoutCreateDocument = toTypedDocument<CheckoutCreateMutation, CheckoutCreateMutationVariables>(
 	CheckoutCreateDocument,
@@ -165,11 +153,6 @@ const checkoutRemovePromoCodeDocument = toTypedDocument<
 	CheckoutRemovePromoCodeMutation,
 	CheckoutRemovePromoCodeMutationVariables
 >(CheckoutRemovePromoCodeDocument);
-
-const requestPasswordResetDocument = toTypedDocument<
-	RequestPasswordResetMutation,
-	RequestPasswordResetMutationVariables
->(RequestPasswordResetDocument);
 
 const userSetDefaultAddressDocument = toTypedDocument<
 	UserSetDefaultAddressMutation,
@@ -250,77 +233,15 @@ export async function updateCheckoutShippingAddress(
 }
 
 export async function attachCustomerToCheckout(checkoutId: string): Promise<CheckoutActionResult> {
-	const result = await executeAuthenticatedGraphQL(checkoutCustomerAttachDocument, {
-		variables: {
-			checkoutId,
-			languageCode: await checkoutGraphqlLanguageCode(),
-		},
-		cache: "no-cache",
-	});
-
-	if (!result.ok) {
-		return { ok: false, error: result.error.message };
+	const result = await attachAibibuStoreCheckout(checkoutId);
+	if (!("ok" in result) || !result.ok) {
+		return { ok: false, error: "Unable to attach this checkout to your Aibibu account" };
 	}
-
-	return toCheckoutActionResult(result.data.checkoutCustomerAttach);
-}
-
-export async function registerCheckoutAccount(input: {
-	email: string;
-	password: string;
-	channel: string;
-	redirectUrl: string;
-}): Promise<SimpleActionResult> {
-	// Confirmation emails embed this URL — reject foreign origins (phishing vector).
-	if (!isAllowedRedirectUrl(input.redirectUrl)) {
-		const { server: t } = await getCheckoutServerTranslations();
-		console.warn(
-			"Received an invalid redirection URL for password reset. " +
-				"Make sure to configure NEXT_PUBLIC_STOREFRONT_URL, " +
-				"see https://github.com/saleor/saleor-docs/blob/-/docs/configuration/allowed-origins.md",
-			{ redirectUrl: input.redirectUrl },
-		);
-		return { ok: false, error: t("invalidRedirectUrl") };
+	const checkout = await fetchCheckoutOnServer(checkoutId);
+	if (!checkout.ok || !checkout.checkout) {
+		return { ok: false, error: "Unable to reload the attached checkout" };
 	}
-
-	const result = await executeRawGraphQL<{
-		accountRegister?: {
-			errors: Array<{ field?: string | null; message?: string | null; code?: string | null }>;
-		};
-	}>({
-		query: `mutation AccountRegister($input: AccountRegisterInput!) {
-			accountRegister(input: $input) {
-				errors { field message code }
-			}
-		}`,
-		variables: { input },
-	});
-
-	if (!result.ok) {
-		return { ok: false, error: result.error.message };
-	}
-
-	const errors = result.data.accountRegister?.errors ?? [];
-	if (errors.length > 0) {
-		const uniqueOnly = errors.every((error) => error.code === "UNIQUE");
-		if (uniqueOnly) {
-			return { ok: true };
-		}
-
-		const { server: t } = await getCheckoutServerTranslations();
-		return {
-			ok: false,
-			fieldErrors: errors.map(
-				(error): CheckoutFieldError => ({
-					field: error.field,
-					message: error.message ?? t("createAccountFailed"),
-					code: error.code as CheckoutFieldError["code"],
-				}),
-			),
-		};
-	}
-
-	return { ok: true };
+	return { ok: true, checkout: checkout.checkout };
 }
 
 type RecoverLine = { variantId: string; quantity: number };
@@ -329,6 +250,20 @@ export async function recoverOrphanedCheckout(
 	channel: string,
 	lines: RecoverLine[],
 ): Promise<CheckoutActionResult & { checkoutId?: string }> {
+	const aibibuCheckout = await createAibibuStoreCheckout(lines);
+	if ("ok" in aibibuCheckout) {
+		if (!aibibuCheckout.ok) return { ok: false, error: "Unable to create checkout" };
+		const checkoutResult = await fetchCheckoutOnServer(aibibuCheckout.data.id);
+		if (!checkoutResult.ok || !checkoutResult.checkout) {
+			return { ok: false, error: "Unable to load the new checkout" };
+		}
+		await saveCheckoutId(channel, checkoutResult.checkout.id);
+		return { ok: true, checkout: checkoutResult.checkout, checkoutId: checkoutResult.checkout.id };
+	}
+	if (aibibuCheckout.status === "unavailable") {
+		return { ok: false, error: "Account service is unavailable" };
+	}
+
 	const createResult = await executeAuthenticatedGraphQL(checkoutCreateDocument, {
 		variables: {
 			channel,
@@ -667,42 +602,6 @@ export async function removeCheckoutPromoCode(
 	}
 
 	return toCheckoutActionResult(result.data.checkoutRemovePromoCode);
-}
-
-export async function requestCheckoutPasswordReset(input: {
-	email: string;
-	channel: string;
-	redirectUrl: string;
-}): Promise<SimpleActionResult> {
-	// Reset emails embed this URL — reject foreign origins (phishing vector).
-	if (!isAllowedRedirectUrl(input.redirectUrl)) {
-		const { server: t } = await getCheckoutServerTranslations();
-		console.warn(
-			"Received an invalid redirection URL for password reset. " +
-				"Make sure to configure NEXT_PUBLIC_STOREFRONT_URL, " +
-				"see https://github.com/saleor/saleor-docs/blob/-/docs/configuration/allowed-origins.md",
-			{ redirectUrl: input.redirectUrl },
-		);
-		return { ok: false, error: t("invalidRedirectUrl") };
-	}
-
-	const result = await executeRawGraphQL<RequestPasswordResetMutation>({
-		query: requestPasswordResetDocument.toString(),
-		variables: input,
-	});
-
-	if (!result.ok) {
-		return { ok: false, error: result.error.message };
-	}
-
-	// Swallow Saleor validation errors (e.g. unknown email) — same anti-enumeration
-	// posture as POST /api/auth/reset-password.
-	const errors = result.data.requestPasswordReset?.errors ?? [];
-	if (errors.length > 0) {
-		console.error("Checkout password reset validation errors");
-	}
-
-	return { ok: true };
 }
 
 export async function setUserDefaultAddress(

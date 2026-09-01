@@ -16,13 +16,13 @@ export type LogoutOptions = {
 	stayOnPage?: boolean;
 };
 
-/** End Saleor session on the server and hard-navigate to bust Router Cache. */
+/** End the Aibibu/Supabase session on the server and hard-navigate to bust Router Cache. */
 export function useLogout() {
 	return useCallback(async (options?: LogoutOptions) => {
 		try {
 			await logout();
 		} catch {
-			// Checkout detach / server cookie clear is best-effort.
+			// Remote session revocation / server cookie clear is best-effort.
 		}
 
 		// Other tabs re-render their auth chrome on next focus; this tab hard-navigates.

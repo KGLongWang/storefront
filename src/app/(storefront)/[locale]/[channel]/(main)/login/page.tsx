@@ -3,15 +3,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { AuthFormSection } from "@/ui/components/auth/auth-form-section";
-import { ConfirmAccountMode } from "@/ui/components/auth/confirm-account-mode";
 import { LoginForm } from "@/ui/components/login-form";
-import {
-	getEmailAndTokenFromSearchParams,
-	isAccountConfirmationLink,
-} from "@/lib/auth/account-confirmation-url";
-import { searchParamsRecordToGetter } from "@/lib/auth/search-params-record";
-import { CurrentUserDocument } from "@/gql/graphql";
-import { fetchAuthenticatedUserIfSession } from "@/lib/auth/fetch-authenticated-user";
+import { getAibibuStoreAuthState } from "@/lib/auth/aibibu-server-session";
 import { buildStorefrontPath } from "@/lib/storefront-path";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -25,7 +18,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 type LoginPageProps = {
 	params: Promise<{ locale: string; channel: string }>;
-	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default function LoginPage(props: LoginPageProps) {
@@ -36,24 +28,8 @@ export default function LoginPage(props: LoginPageProps) {
 	);
 }
 
-async function LoginPageEntry({ params: paramsPromise, searchParams: searchParamsPromise }: LoginPageProps) {
-	const [{ locale, channel }, searchParams] = await Promise.all([paramsPromise, searchParamsPromise]);
-	const searchParamsGetter = searchParamsRecordToGetter(searchParams);
-	const credentials = getEmailAndTokenFromSearchParams(searchParamsGetter);
-
-	if (credentials && isAccountConfirmationLink(searchParamsGetter)) {
-		return (
-			<AuthFormSection>
-				<ConfirmAccountMode
-					email={credentials.email}
-					token={credentials.token}
-					locale={locale}
-					channel={channel}
-				/>
-			</AuthFormSection>
-		);
-	}
-
+async function LoginPageEntry({ params }: LoginPageProps) {
+	const { locale, channel } = await params;
 	return (
 		<Suspense fallback={<LoginSkeleton />}>
 			<LoginContent locale={locale} channel={channel} />
@@ -94,11 +70,9 @@ async function LoginContent({ locale, channel }: { locale: string; channel: stri
 	// Request-dynamic — never serve a cached login redirect from a prior authenticated session.
 	await cookies();
 
-	const result = await fetchAuthenticatedUserIfSession(CurrentUserDocument, {
-		cache: "no-cache",
-	});
+	const result = await getAibibuStoreAuthState();
 
-	if (result?.ok && result.data.me) {
+	if (result.status === "authenticated") {
 		redirect(buildStorefrontPath(locale, channel));
 	}
 

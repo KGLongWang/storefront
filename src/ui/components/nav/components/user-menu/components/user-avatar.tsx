@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { type UserDetailsFragment } from "@/gql/graphql";
+import type { HeaderUser } from "@/lib/auth/get-header-user";
 
 type Props = {
-	user: UserDetailsFragment;
+	user: HeaderUser;
 };
 
 export const UserAvatar = ({ user }: Props) => {

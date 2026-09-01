@@ -33,6 +33,38 @@ export async function loginWithBff(email: string, password: string): Promise<Aut
 	return data;
 }
 
+export async function getAuthMethodWithBff(
+	email: string,
+): Promise<AuthApiResponse & { method?: "password" | "otp" }> {
+	const response = await fetch("/api/auth/method", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ email }),
+		credentials: "same-origin",
+	});
+	return (await parseAuthResponse(response)) as AuthApiResponse & { method?: "password" | "otp" };
+}
+
+export async function requestOtpWithBff(email: string): Promise<AuthApiResponse> {
+	const response = await fetch("/api/auth/otp/request", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ email }),
+		credentials: "same-origin",
+	});
+	return parseAuthResponse(response);
+}
+
+export async function verifyOtpWithBff(email: string, code: string): Promise<AuthApiResponse> {
+	const response = await fetch("/api/auth/otp/verify", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ email, code }),
+		credentials: "same-origin",
+	});
+	return parseAuthResponse(response);
+}
+
 export async function confirmAccountWithBff(
 	email: string,
 	token: string,

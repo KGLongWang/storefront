@@ -3,17 +3,14 @@
 /* eslint-disable react-hooks/preserve-manual-memoization -- large submit handler; refactor separately */
 
 import { useState, useCallback, useEffect, type FC } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { syncAuthSurfacesAfterSignIn } from "@/lib/auth";
-import { buildAccountConfirmationRedirectUrl } from "@/lib/auth/account-confirmation-url";
-import { resolveBrowseLocaleSlugWithFallback } from "@/lib/browse-locale";
 import { isCheckoutMarketingConsentEnabled } from "@/checkout/lib/marketing-consent";
 import { Button } from "@/ui/components/ui/button";
 import {
 	updateCheckoutEmail,
 	updateCheckoutMarketingConsent,
 	updateCheckoutShippingAddress,
-	registerCheckoutAccount,
 } from "@/app/(checkout)/actions";
 import { type CheckoutFragment, type CountryCode } from "@/checkout/graphql";
 import type { CheckoutUser, ServerCheckout } from "@/checkout/lib/checkout-types";
@@ -27,7 +24,6 @@ import {
 } from "@/checkout/components/address-form/utils";
 import { useUser } from "@/checkout/hooks/use-user";
 import { useOrphanedCheckoutRecovery } from "@/checkout/hooks/use-orphaned-checkout-recovery";
-import { getQueryParams, createQueryString } from "@/checkout/lib/utils/url";
 import {
 	getCheckoutSaveAddressFlag,
 	isUsingSavedShippingAddress,
@@ -36,7 +32,7 @@ import { useCheckoutStepNumber } from "@/checkout/hooks/use-checkout-steps";
 import { useTranslations } from "next-intl";
 
 // Extracted components
-import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
+import { SignInForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
 import { MobileStickyAction } from "./mobile-sticky-action";
 
@@ -44,7 +40,7 @@ import { MobileStickyAction } from "./mobile-sticky-action";
 // Types
 // =============================================================================
 
-type ContactView = "main" | "signIn" | "resetPassword";
+type ContactView = "main" | "signIn";
 
 interface InformationStepProps {
 	checkout: CheckoutFragment;
@@ -103,7 +99,6 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 	onAuthSessionPending,
 }) => {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	const t = useTranslations("checkout.actions");
 	const tErrors = useTranslations("checkout.errors");
 	const tAccount = useTranslations("account.errors");
@@ -125,18 +120,10 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 		("US" as CountryCode);
 
 	// View state - what sub-view are we showing?
-	const [contactView, setContactView] = useState<ContactView>(() => {
-		const { passwordResetToken } = getQueryParams(searchParams);
-		if (passwordResetToken) {
-			return "resetPassword";
-		}
-		return "main";
-	});
+	const [contactView, setContactView] = useState<ContactView>("main");
 
 	// ----- Contact form state -----
 	const [email, setEmail] = useState(() => (isOrphaned ? "" : checkout.email || ""));
-	const [createAccount, setCreateAccount] = useState(false);
-	const [accountPassword, setAccountPassword] = useState("");
 	const [subscribeNews, setSubscribeNews] = useState(false);
 
 	// ----- Address form state (for guests/new address) -----
@@ -280,11 +267,6 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 			if (!authenticated) {
 				if (!email) newErrors.email = tErrors("emailRequired");
 				else if (!validateEmail(email)) newErrors.email = tAccount("invalidEmail");
-
-				if (createAccount) {
-					if (!accountPassword) newErrors.password = tAccount("passwordRequired");
-					else if (accountPassword.length < 8) newErrors.password = tAccount("passwordMinLength");
-				}
 			}
 
 			// Validate shipping address (if required)
@@ -350,27 +332,6 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 					if (isCheckoutMarketingConsentEnabled()) {
 						await updateCheckoutMarketingConsent(updatedCheckout.id, subscribeNews);
 					}
-
-					if (createAccount && accountPassword) {
-						const registerResult = await registerCheckoutAccount({
-							email,
-							password: accountPassword,
-							channel: checkout.channel.slug,
-							redirectUrl: buildAccountConfirmationRedirectUrl(
-								window.location.origin,
-								resolveBrowseLocaleSlugWithFallback(),
-								checkout.channel.slug,
-							),
-						});
-						if (!registerResult.ok) {
-							const fieldError = registerResult.fieldErrors?.[0];
-							setErrors({
-								password: fieldError?.message ?? registerResult.error ?? tErrors("createAccountFailed"),
-							});
-							setIsSubmitting(false);
-							return;
-						}
-					}
 				}
 
 				if (checkout.isShippingRequired) {
@@ -432,8 +393,6 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 			authenticated,
 			isOrphaned,
 			email,
-			createAccount,
-			accountPassword,
 			subscribeNews,
 			user?.addresses,
 			showNewAddressForm,
@@ -448,36 +407,12 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 		],
 	);
 
-	// ----- Render: Password Reset -----
-	if (contactView === "resetPassword") {
-		return (
-			<div className="space-y-8">
-				<ResetPasswordForm
-					onSuccess={async () => {
-						onAuthSessionPending();
-						await syncAuthSurfacesAfterSignIn(checkout.channel.slug, router);
-						setContactView("main");
-					}}
-					onBackToSignIn={() => {
-						const newQuery = createQueryString(searchParams, {
-							passwordResetToken: null,
-							passwordResetEmail: null,
-						});
-						router.replace(`?${newQuery}`, { scroll: false });
-						setContactView("signIn");
-					}}
-				/>
-			</div>
-		);
-	}
-
 	// ----- Render: Sign In -----
 	if (contactView === "signIn") {
 		return (
 			<div className="space-y-8">
 				<SignInForm
 					initialEmail={email}
-					channelSlug={checkout.channel.slug}
 					onSuccess={async () => {
 						onAuthSessionPending();
 						await syncAuthSurfacesAfterSignIn(checkout.channel.slug, router);
@@ -535,11 +470,6 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 				onEmailChange={handleEmailChange}
 				onEmailBlur={handleEmailBlur}
 				emailError={errors.email}
-				createAccount={createAccount}
-				onCreateAccountChange={setCreateAccount}
-				password={accountPassword}
-				onPasswordChange={setAccountPassword}
-				passwordError={errors.password}
 				subscribeNews={subscribeNews}
 				onSubscribeChange={setSubscribeNews}
 			/>

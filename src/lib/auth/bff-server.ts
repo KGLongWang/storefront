@@ -1,53 +1,110 @@
 import "server-only";
 
-import { mapSaleorAuthErrors } from "./auth-api-utils";
+import { cookies } from "next/headers";
+
 import type { AuthApiError } from "./auth-api-types";
-import { getServerAuthClient } from "./server";
+import {
+	AibibuAuthError,
+	createOAuthCodeSession,
+	createOtpSession,
+	createPasswordSession,
+	getPreferredAuthMethod as getAibibuPreferredAuthMethod,
+	requestEmailOtp as requestAibibuEmailOtp,
+	revokeAibibuSession,
+} from "./aibibu-auth-client";
+import { clearAibibuSession, persistAibibuSession, readAibibuSession } from "./aibibu-session";
 
 export type { AuthApiError };
 
-/** Sign in via Saleor and persist tokens in request cookies (BFF). */
+function publicAuthError(error: unknown): AuthApiError {
+	if (!(error instanceof AibibuAuthError)) {
+		return { message: "Authentication service is unavailable", code: "UNAVAILABLE" };
+	}
+	if (error.status === 429) return { message: "Too many attempts", code: "RATE_LIMITED" };
+	if (error.status === 401 || error.status === 403) {
+		return { message: "Invalid credentials", code: "INVALID_CREDENTIALS" };
+	}
+	return { message: "Authentication service is unavailable", code: "UNAVAILABLE" };
+}
+
+async function storeSession(session: Parameters<typeof persistAibibuSession>[1]): Promise<void> {
+	const cookieStore = await cookies();
+	persistAibibuSession(cookieStore, session, { secure: process.env.NODE_ENV === "production" });
+}
+
+/** Sign in through Aibibu/Supabase and persist tokens in HttpOnly cookies. */
 export async function signInWithPassword(
 	email: string,
 	password: string,
 ): Promise<{ ok: true } | { ok: false; errors: AuthApiError[] }> {
-	const authClient = await getServerAuthClient();
-	const result = await authClient.signIn({ email, password });
-	const tokenCreate = result.data?.tokenCreate;
-
-	if (tokenCreate?.errors?.length) {
-		return { ok: false, errors: mapSaleorAuthErrors(tokenCreate.errors, "Sign in failed") };
-	}
-
-	if (tokenCreate?.token) {
+	try {
+		await storeSession(await createPasswordSession(email, password));
 		return { ok: true };
+	} catch (error) {
+		return { ok: false, errors: [publicAuthError(error)] };
 	}
-
-	return { ok: false, errors: [{ message: "Sign in failed" }] };
 }
 
-/** Complete password reset and establish a session (BFF). */
-export async function resetPasswordWithToken(
+export async function getPreferredAuthMethod(email: string): Promise<"password" | "otp"> {
+	return getAibibuPreferredAuthMethod(email);
+}
+
+export async function requestSignInOtp(
 	email: string,
-	token: string,
-	password: string,
 ): Promise<{ ok: true } | { ok: false; errors: AuthApiError[] }> {
-	const authClient = await getServerAuthClient();
-	const result = await authClient.resetPassword({ email, token, password });
-	const setPassword = result.data?.setPassword;
-
-	if (setPassword?.errors?.length) {
-		return { ok: false, errors: mapSaleorAuthErrors(setPassword.errors, "Failed to reset password") };
-	}
-
-	if (setPassword?.token) {
+	try {
+		await requestAibibuEmailOtp(email);
 		return { ok: true };
+	} catch (error) {
+		return { ok: false, errors: [publicAuthError(error)] };
 	}
-
-	return { ok: false, errors: [{ message: "Failed to reset password" }] };
 }
 
-/** Clear Saleor auth cookies for the current session. */
+export async function verifySignInOtp(
+	email: string,
+	code: string,
+): Promise<{ ok: true } | { ok: false; errors: AuthApiError[] }> {
+	try {
+		await storeSession(await createOtpSession(email, code));
+		return { ok: true };
+	} catch (error) {
+		return { ok: false, errors: [publicAuthError(error)] };
+	}
+}
+
+export async function signInWithOAuthCode(input: {
+	code: string;
+	codeVerifier: string;
+	clientId: string;
+	redirectUri: string;
+}): Promise<{ ok: true } | { ok: false; errors: AuthApiError[] }> {
+	try {
+		await storeSession(await createOAuthCodeSession(input));
+		return { ok: true };
+	} catch (error) {
+		return { ok: false, errors: [publicAuthError(error)] };
+	}
+}
+
+/** Saleor-native password reset is intentionally unavailable to customers. */
+export async function resetPasswordWithToken(
+	_email: string,
+	_token: string,
+	_password: string,
+): Promise<{ ok: true } | { ok: false; errors: AuthApiError[] }> {
+	return { ok: false, errors: [{ message: "Use Aibibu account recovery", code: "AIBIBU_AUTH_REQUIRED" }] };
+}
+
+/** Revoke the Supabase session best-effort, then always clear local cookies. */
 export async function signOutSession(): Promise<void> {
-	(await getServerAuthClient()).signOut();
+	const cookieStore = await cookies();
+	const { accessToken } = readAibibuSession(cookieStore);
+	if (accessToken) {
+		try {
+			await revokeAibibuSession(accessToken);
+		} catch {
+			// Local logout remains authoritative when the identity service is down.
+		}
+	}
+	clearAibibuSession(cookieStore);
 }

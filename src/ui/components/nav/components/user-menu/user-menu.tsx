@@ -1,7 +1,7 @@
 "use client";
 
-import { type UserDetailsFragment } from "@/gql/graphql";
 import { useTranslations } from "next-intl";
+import type { HeaderUser } from "@/lib/auth/get-header-user";
 import { LogoutButton } from "@/lib/auth/logout-button";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import {
@@ -16,7 +16,7 @@ import { UserInfo } from "./components/user-info";
 import { UserAvatar } from "./components/user-avatar";
 
 type Props = {
-	user: UserDetailsFragment;
+	user: HeaderUser;
 };
 
 export function UserMenu({ user }: Props) {

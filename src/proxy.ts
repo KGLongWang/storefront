@@ -4,6 +4,8 @@ import { getStaticStorefrontChannelSlugs, isAllowedStorefrontChannel } from "@/c
 import { getDefaultLocaleSlug, isLocaleSlug, isStorefrontLocaleSlug } from "@/config/locale";
 import { BROWSE_LOCALE_COOKIE, getBrowseLocaleCookieOptions } from "@/lib/browse-locale";
 import { buildStorefrontPath } from "@/lib/storefront-path";
+import { refreshAibibuSession } from "@/lib/auth/aibibu-auth-client";
+import { AIBIBU_ACCESS_COOKIE, AIBIBU_REFRESH_COOKIE, persistAibibuSession } from "@/lib/auth/aibibu-session";
 
 const RESERVED_ROOT_SEGMENTS = new Set([
 	"api",
@@ -35,7 +37,35 @@ function withBrowseLocaleCookie(request: NextRequest, response: NextResponse, lo
 	return response;
 }
 
-export function middleware(request: NextRequest) {
+function accessTokenExpiresSoon(token: string | undefined): boolean {
+	if (!token) return true;
+	try {
+		const payload = token.split(".")[1];
+		if (!payload) return true;
+		const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+		const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+		const decoded = JSON.parse(atob(padded)) as { exp?: number };
+		return typeof decoded.exp !== "number" || decoded.exp <= Math.floor(Date.now() / 1000) + 300;
+	} catch {
+		return true;
+	}
+}
+
+async function withAibibuSessionRefresh(request: NextRequest, response: NextResponse): Promise<NextResponse> {
+	const refreshToken = request.cookies.get(AIBIBU_REFRESH_COOKIE)?.value;
+	const accessToken = request.cookies.get(AIBIBU_ACCESS_COOKIE)?.value;
+	if (!refreshToken || !accessTokenExpiresSoon(accessToken)) return response;
+
+	try {
+		const session = await refreshAibibuSession(refreshToken);
+		persistAibibuSession(response.cookies, session, { secure: process.env.NODE_ENV === "production" });
+	} catch {
+		// Keep the current cookies on transient failures; authenticated routes still validate upstream.
+	}
+	return response;
+}
+
+export async function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 
 	if (
@@ -53,11 +83,14 @@ export function middleware(request: NextRequest) {
 	// Root → default browse home
 	if (segments.length === 0) {
 		if (!defaultChannel) {
-			return NextResponse.next();
+			return withAibibuSessionRefresh(request, NextResponse.next());
 		}
 		const url = request.nextUrl.clone();
 		url.pathname = buildStorefrontPath(defaultLocale, defaultChannel);
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
+		return withAibibuSessionRefresh(
+			request,
+			withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale),
+		);
 	}
 
 	const [first, second, ...rest] = segments;
@@ -72,25 +105,31 @@ export function middleware(request: NextRequest) {
 			const url = request.nextUrl.clone();
 			const suffix = rest.length > 0 ? `/${rest.join("/")}` : "";
 			url.pathname = buildStorefrontPath(defaultLocale, second, suffix);
-			return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
+			return withAibibuSessionRefresh(
+				request,
+				withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale),
+			);
 		}
-		return NextResponse.next();
+		return withAibibuSessionRefresh(request, NextResponse.next());
 	}
 
 	// Canonical format: /{locale}/{channel}/…
 	if (isStorefrontLocaleSlug(first)) {
 		if (second && isChannelSlug(second)) {
-			return withBrowseLocaleCookie(request, NextResponse.next(), first);
+			return withAibibuSessionRefresh(request, withBrowseLocaleCookie(request, NextResponse.next(), first));
 		}
 
 		// /{locale} only → add default channel
 		if (!second && defaultChannel) {
 			const url = request.nextUrl.clone();
 			url.pathname = buildStorefrontPath(first, defaultChannel);
-			return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), first);
+			return withAibibuSessionRefresh(
+				request,
+				withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), first),
+			);
 		}
 
-		return NextResponse.next();
+		return withAibibuSessionRefresh(request, NextResponse.next());
 	}
 
 	// Legacy: /{channel}/… → /{defaultLocale}/{channel}/…
@@ -98,10 +137,13 @@ export function middleware(request: NextRequest) {
 		const url = request.nextUrl.clone();
 		const suffix = [second, ...rest].filter(Boolean).join("/");
 		url.pathname = buildStorefrontPath(defaultLocale, first, suffix ? `/${suffix}` : "");
-		return withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale);
+		return withAibibuSessionRefresh(
+			request,
+			withBrowseLocaleCookie(request, NextResponse.redirect(url, 308), defaultLocale),
+		);
 	}
 
-	return NextResponse.next();
+	return withAibibuSessionRefresh(request, NextResponse.next());
 }
 
 export const config = {
@@ -118,5 +160,5 @@ export const config = {
 	 * The equivalent guards at the top of `middleware()` stay as a backstop for runtimes
 	 * that apply the matcher differently (self-hosted, `next start`).
 	 */
-	matcher: ["/((?!api/|api$|checkout/|checkout$|_next/|.*\\.[\\w]+$).*)"],
+	matcher: ["/((?!api/|api$|_next/|.*\\.[\\w]+$).*)"],
 };

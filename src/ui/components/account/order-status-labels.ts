@@ -11,9 +11,9 @@ const CUSTOMER_ORDER_STATUS_KEYS: Partial<Record<OrderStatus, OrderStatusLabelKe
 
 export function getCustomerOrderStatusLabel(
 	t: (key: OrderStatusLabelKey) => string,
-	status: OrderStatus,
+	status: string,
 	statusDisplay: string,
 ): string {
-	const key = CUSTOMER_ORDER_STATUS_KEYS[status];
+	const key = CUSTOMER_ORDER_STATUS_KEYS[status as OrderStatus];
 	return key ? t(key) : statusDisplay;
 }
