@@ -71,6 +71,7 @@ import {
 	hasMaterialCheckoutTotalChange,
 } from "@/checkout/lib/payment/checkout-pay-amount";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
+import { getEpayPaymentGuardError } from "@/checkout/lib/payment/providers/epay";
 import { buildMarketingConsentMetadata } from "@/checkout/lib/marketing-consent";
 import { fetchCheckoutOnServer } from "@/checkout/lib/server/fetch-checkout";
 import { getCheckoutServerTranslations } from "@/checkout/lib/server/get-checkout-server-translations";
@@ -419,6 +420,11 @@ export async function initializeCheckoutTransaction(
 	const stripeGuardError = getStripePaymentGuardError(variables.paymentGateway?.id);
 	if (stripeGuardError) {
 		return { ok: false, error: t("stripeNotEnabled") };
+	}
+
+	const epayGuardError = getEpayPaymentGuardError(variables.paymentGateway?.id);
+	if (epayGuardError) {
+		return { ok: false, error: t("paymentsDisabled") };
 	}
 
 	// Defense in depth: never trust the client-supplied amount. Saleor re-validates
