@@ -448,6 +448,7 @@
 			"updateEmailFailed": "Failed to update email",
 			"createAccountFailed": "Failed to create account",
 			"updateAddressFailed": "Failed to update address",
+			"fulfillmentSaveFailed": "Failed to save delivery details",
 			"crashTitle": "Checkout error",
 			"crashMessage": "Something went wrong loading checkout. Please try again."
 		},
@@ -464,6 +465,13 @@
 			"processing": "Processing…",
 			"passwordMinPlaceholder": "Password (minimum 8 characters)",
 			"signedIn": "Signed in"
+		},
+		"fulfillment": {
+			"title": "Delivery details",
+			"description": "These details help the fulfillment app deliver your order. Missing details may require manual processing after payment.",
+			"requiredForAutomatic": "required for automatic delivery",
+			"optional": "optional",
+			"selectPlaceholder": "Select an option"
 		},
 		"summary": {
 			"title": "Order Summary",

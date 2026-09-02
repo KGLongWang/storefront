@@ -38,6 +38,8 @@ fragment PaymentGatewayFragment on PaymentGateway {
 fragment CheckoutFragment on Checkout {
 	id
 	email
+	# Only expose the fulfillment payload; payment/marketing metadata stays server-side.
+	fulfillmentMetadata: metafields(keys: ["fulfillment_params"])
 	discount {
 		...Money
 	}
@@ -134,11 +136,14 @@ fragment CheckoutLineFragment on CheckoutLine {
 		}
 		id
 		name
+		# Product metadata is filtered to the public fulfillment contract keys.
+		fulfillmentMetadata: metafields(keys: ["fulfillment_type", "fulfillment_params_schema"])
 		translation(languageCode: $languageCode) {
 			name
 		}
 		product {
 			name
+			fulfillmentMetadata: metafields(keys: ["fulfillment_type", "fulfillment_params_schema"])
 			translation(languageCode: $languageCode) {
 				language {
 					code

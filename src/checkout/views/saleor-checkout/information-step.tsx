@@ -1,8 +1,6 @@
 "use client";
 
-/* eslint-disable react-hooks/preserve-manual-memoization -- large submit handler; refactor separately */
-
-import { useState, useCallback, useEffect, type FC } from "react";
+import { useState, useCallback, useEffect, useMemo, type FC } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { syncAuthSurfacesAfterSignIn } from "@/lib/auth";
 import { buildAccountConfirmationRedirectUrl } from "@/lib/auth/account-confirmation-url";
@@ -12,6 +10,7 @@ import { Button } from "@/ui/components/ui/button";
 import {
 	updateCheckoutEmail,
 	updateCheckoutMarketingConsent,
+	updateCheckoutFulfillmentParams,
 	updateCheckoutShippingAddress,
 	registerCheckoutAccount,
 } from "@/app/(checkout)/actions";
@@ -34,10 +33,17 @@ import {
 } from "@/checkout/lib/shipping-address-submit";
 import { useCheckoutStepNumber } from "@/checkout/hooks/use-checkout-steps";
 import { useTranslations } from "next-intl";
+import {
+	buildFulfillmentParamsMetadata,
+	getFulfillmentLineDefinitions,
+	initializeFulfillmentValues,
+	type FulfillmentValues,
+} from "@/checkout/lib/fulfillment-params";
 
 // Extracted components
 import { SignInForm, ResetPasswordForm } from "@/checkout/components/contact";
 import { ContactSection, ShippingAddressSection } from "./sections";
+import { FulfillmentParamsSection } from "./fulfillment-params-section";
 import { MobileStickyAction } from "./mobile-sticky-action";
 
 // =============================================================================
@@ -117,6 +123,23 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 	const contactLoading = userLoading || isAuthTransitionLoading;
 	const { availableShippingCountries } = useAvailableShippingCountries();
 	const shippingAddress = checkout.shippingAddress;
+	const fulfillmentDefinitions = useMemo(
+		() =>
+			getFulfillmentLineDefinitions(
+				checkout.lines.map((line) => ({
+					lineId: line.id,
+					variantId: line.variant.id,
+					productName: line.variant.product.name,
+					variantName: line.variant.name,
+					productMetadata: line.variant.product.fulfillmentMetadata,
+					variantMetadata: line.variant.fulfillmentMetadata,
+				})),
+			),
+		[checkout.lines],
+	);
+	const [fulfillmentValues, setFulfillmentValues] = useState<FulfillmentValues>(() =>
+		initializeFulfillmentValues(fulfillmentDefinitions, checkout.fulfillmentMetadata, user?.email),
+	);
 
 	// Default country: use checkout's address, or first available country from channel
 	const defaultCountry =
@@ -214,6 +237,13 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
 	};
+
+	const handleFulfillmentChange = useCallback((lineId: string, fieldKey: string, value: string) => {
+		setFulfillmentValues((previous) => ({
+			...previous,
+			[lineId]: { ...previous[lineId], [fieldKey]: value },
+		}));
+	}, []);
 
 	const handleCountryChange = (value: string) => {
 		setCountryCode(value as CountryCode);
@@ -421,6 +451,29 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 					}
 				}
 
+				if (fulfillmentDefinitions.some((definition) => definition.schema)) {
+					const fulfillmentMetadata = buildFulfillmentParamsMetadata(
+						fulfillmentDefinitions,
+						fulfillmentValues,
+					);
+					const fulfillmentResult = await updateCheckoutFulfillmentParams(
+						updatedCheckout.id,
+						fulfillmentMetadata,
+					);
+					if (!fulfillmentResult.ok) {
+						setErrors({ fulfillment: fulfillmentResult.error ?? tErrors("fulfillmentSaveFailed") });
+						setIsSubmitting(false);
+						return;
+					}
+
+					updatedCheckout = {
+						...updatedCheckout,
+						fulfillmentMetadata: Object.fromEntries(
+							fulfillmentMetadata.map((item) => [item.key, item.value]),
+						),
+					};
+				}
+
 				onComplete(updatedCheckout);
 			} catch {
 				setIsSubmitting(false);
@@ -444,6 +497,10 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 			getFieldLabel,
 			formData,
 			countryCode,
+			fulfillmentDefinitions,
+			fulfillmentValues,
+			tAccount,
+			tErrors,
 			onComplete,
 		],
 	);
@@ -542,6 +599,13 @@ const InformationStepForm: FC<InformationStepFormProps> = ({
 				passwordError={errors.password}
 				subscribeNews={subscribeNews}
 				onSubscribeChange={setSubscribeNews}
+			/>
+
+			<FulfillmentParamsSection
+				definitions={fulfillmentDefinitions}
+				values={fulfillmentValues}
+				onChange={handleFulfillmentChange}
+				error={errors.fulfillment}
 			/>
 
 			{checkout.isShippingRequired && (

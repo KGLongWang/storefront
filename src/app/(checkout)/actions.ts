@@ -79,6 +79,7 @@ import {
 } from "@/checkout/lib/payment/checkout-pay-amount";
 import { getStripePaymentGuardError, isStripePaymentEnabled } from "@/checkout/lib/payment/providers/stripe";
 import { buildMarketingConsentMetadata } from "@/checkout/lib/marketing-consent";
+import type { FulfillmentMetadataInput } from "@/checkout/lib/fulfillment-params";
 import { fetchCheckoutOnServer } from "@/checkout/lib/server/fetch-checkout";
 import { getCheckoutServerTranslations } from "@/checkout/lib/server/get-checkout-server-translations";
 import { toCheckoutActionResult } from "@/checkout/lib/server/mutation-result";
@@ -222,6 +223,28 @@ export async function updateCheckoutMarketingConsent(
 			ok: false,
 			error: errors[0]?.message ?? t("marketingSaveFailed"),
 		};
+	}
+
+	return { ok: true };
+}
+
+/** Persists metadata-driven delivery parameters for the post-payment fulfillment app. */
+export async function updateCheckoutFulfillmentParams(
+	checkoutId: string,
+	input: FulfillmentMetadataInput[],
+): Promise<SimpleActionResult> {
+	const result = await executeAuthenticatedGraphQL(checkoutMetadataUpdateDocument, {
+		variables: { id: checkoutId, input },
+		cache: "no-cache",
+	});
+
+	if (!result.ok) {
+		return { ok: false, error: result.error.message };
+	}
+
+	const errors = result.data.updateMetadata?.errors ?? [];
+	if (errors.length > 0) {
+		return { ok: false, error: errors[0]?.message ?? "Failed to save fulfillment details" };
 	}
 
 	return { ok: true };

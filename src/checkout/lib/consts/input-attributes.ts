@@ -44,3 +44,10 @@ export const contactFieldAttributes = {
 	currentPassword: { autoComplete: "current-password", name: "password" },
 	promoCode: { autoComplete: "off", name: "promoCode", inputMode: "text" as const },
 } as const;
+
+/** Autofill hints for metadata-driven fulfillment fields. */
+export const fulfillmentFieldAttributes = {
+	text: { autoComplete: "off", inputMode: "text" as const },
+	email: { autoComplete: "email", inputMode: "email" as const },
+	select: { autoComplete: "off" },
+} as const;
