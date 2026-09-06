@@ -1,14 +1,16 @@
 import { createHash, randomBytes } from "node:crypto";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import {
 	AIBIBU_OAUTH_STATE_COOKIE,
+	AIBIBU_OAUTH_RETURN_COOKIE,
 	AIBIBU_OAUTH_VERIFIER_COOKIE,
+	allowedOAuthReturnPath,
 	getAibibuOAuthConfig,
 	transientOAuthCookieOptions,
 } from "@/lib/auth/aibibu-oauth-server";
 
-export function POST() {
+export async function POST(request: NextRequest) {
 	let config;
 	try {
 		config = getAibibuOAuthConfig();
@@ -38,5 +40,11 @@ export function POST() {
 	const cookieOptions = transientOAuthCookieOptions();
 	response.cookies.set(AIBIBU_OAUTH_STATE_COOKIE, state, cookieOptions);
 	response.cookies.set(AIBIBU_OAUTH_VERIFIER_COOKIE, verifier, cookieOptions);
+	const body = (await request.json().catch(() => null)) as { returnTo?: string } | null;
+	response.cookies.set(
+		AIBIBU_OAUTH_RETURN_COOKIE,
+		allowedOAuthReturnPath(body?.returnTo, new URL(config.redirectUri).origin),
+		cookieOptions,
+	);
 	return response;
 }

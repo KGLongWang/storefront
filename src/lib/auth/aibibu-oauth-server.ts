@@ -2,6 +2,7 @@ import "server-only";
 
 export const AIBIBU_OAUTH_STATE_COOKIE = "aibibu_store_oauth_state";
 export const AIBIBU_OAUTH_VERIFIER_COOKIE = "aibibu_store_oauth_verifier";
+export const AIBIBU_OAUTH_RETURN_COOKIE = "aibibu_store_oauth_return";
 
 export type AibibuOAuthConfig = {
 	issuerUrl: string;
@@ -52,4 +53,17 @@ export function transientOAuthCookieOptions(): {
 		path: "/api/auth/aibibu",
 		maxAge: 10 * 60,
 	};
+}
+
+export function allowedOAuthReturnPath(value: string | undefined, storefrontUrl: string): string {
+	const fallback = "/account";
+	if (!value?.trim()) return fallback;
+	try {
+		const url = new URL(value, storefrontUrl);
+		const storefront = new URL(storefrontUrl);
+		if (url.origin !== storefront.origin || !url.pathname.startsWith("/")) return fallback;
+		return `${url.pathname}${url.search}${url.hash}`;
+	} catch {
+		return fallback;
+	}
 }

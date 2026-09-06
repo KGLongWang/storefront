@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
 	AIBIBU_OAUTH_STATE_COOKIE,
+	AIBIBU_OAUTH_RETURN_COOKIE,
 	AIBIBU_OAUTH_VERIFIER_COOKIE,
 	getAibibuOAuthConfig,
 	transientOAuthCookieOptions,
@@ -21,6 +22,7 @@ function clearTransientCookies(response: NextResponse) {
 	const options = { ...transientOAuthCookieOptions(), maxAge: 0 };
 	response.cookies.set(AIBIBU_OAUTH_STATE_COOKIE, "", options);
 	response.cookies.set(AIBIBU_OAUTH_VERIFIER_COOKIE, "", options);
+	response.cookies.set(AIBIBU_OAUTH_RETURN_COOKIE, "", options);
 	return response;
 }
 
@@ -29,6 +31,7 @@ export async function POST(request: NextRequest) {
 	const cookieStore = await cookies();
 	const expectedState = cookieStore.get(AIBIBU_OAUTH_STATE_COOKIE)?.value || "";
 	const verifier = cookieStore.get(AIBIBU_OAUTH_VERIFIER_COOKIE)?.value || "";
+	const returnTo = cookieStore.get(AIBIBU_OAUTH_RETURN_COOKIE)?.value || "/account";
 	if (
 		!body?.code ||
 		body.code.length > 4096 ||
@@ -59,5 +62,5 @@ export async function POST(request: NextRequest) {
 			NextResponse.json({ errors: result.errors }, { status: httpStatusForAuthErrors(result.errors) }),
 		);
 	}
-	return clearTransientCookies(NextResponse.json({ ok: true }));
+	return clearTransientCookies(NextResponse.json({ ok: true, redirectTo: returnTo }));
 }
