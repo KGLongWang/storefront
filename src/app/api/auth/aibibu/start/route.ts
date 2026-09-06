@@ -29,6 +29,7 @@ export function POST() {
 	authorizationUrl.searchParams.set("scope", "email profile");
 
 	const response = NextResponse.json({
+		protocol: "pkce",
 		authorizationUrl: authorizationUrl.toString(),
 		state,
 		authOrigin: config.authWebOrigin,

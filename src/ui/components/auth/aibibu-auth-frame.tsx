@@ -8,6 +8,7 @@ import { isAibibuOAuthCallbackMessage, isAibibuOAuthRestartMessage } from "@/lib
 import { Button } from "@/ui/components/ui/button";
 
 type OAuthStartResponse = {
+	protocol: "pkce";
 	authorizationUrl: string;
 	state: string;
 	authOrigin: string;
@@ -38,7 +39,7 @@ export function AibibuAuthFrame({ onSuccess }: { onSuccess: () => void | Promise
 			});
 			if (!response.ok) throw new Error("oauth_start_failed");
 			const data = (await response.json()) as Partial<OAuthStartResponse>;
-			if (!data.authorizationUrl || !data.state || !data.authOrigin) {
+			if (data.protocol !== "pkce" || !data.authorizationUrl || !data.state || !data.authOrigin) {
 				throw new Error("oauth_start_invalid");
 			}
 			expectedState.current = data.state;

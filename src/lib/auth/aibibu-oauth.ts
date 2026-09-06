@@ -1,5 +1,11 @@
 export const AIBIBU_OAUTH_CALLBACK_MESSAGE = "aibibu.auth.oauth.callback";
 export const AIBIBU_OAUTH_RESTART_MESSAGE = "aibibu.auth.oauth.retry";
+/**
+ * Message emitted by the standalone auth UI. It is intentionally kept
+ * separate from the PKCE callback message: an access token cannot be sent to
+ * the current storefront exchange route as if it were a one-time code.
+ */
+export const AIBIBU_AUTH_SUCCESS_MESSAGE = "aibibu.auth.success";
 
 export type AibibuOAuthCallbackMessage = {
 	type: typeof AIBIBU_OAUTH_CALLBACK_MESSAGE;
@@ -8,6 +14,26 @@ export type AibibuOAuthCallbackMessage = {
 	error?: string;
 	errorDescription?: string;
 };
+
+export type AibibuAuthSuccessMessage = {
+	type: typeof AIBIBU_AUTH_SUCCESS_MESSAGE;
+	access_token: string;
+	expires_at?: number;
+	state?: string;
+};
+
+export function isAibibuAuthSuccessMessage(
+	value: unknown,
+	expectedState?: string,
+): value is AibibuAuthSuccessMessage {
+	if (!value || typeof value !== "object") return false;
+	const message = value as Record<string, unknown>;
+	if (message.type !== AIBIBU_AUTH_SUCCESS_MESSAGE) return false;
+	if (typeof message.access_token !== "string" || message.access_token.trim() === "") return false;
+	if (message.expires_at !== undefined && typeof message.expires_at !== "number") return false;
+	if (expectedState !== undefined && message.state !== expectedState) return false;
+	return true;
+}
 
 export function isAibibuOAuthCallbackMessage(value: unknown): value is AibibuOAuthCallbackMessage {
 	if (!value || typeof value !== "object") return false;
