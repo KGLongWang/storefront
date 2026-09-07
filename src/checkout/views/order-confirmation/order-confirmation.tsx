@@ -89,7 +89,6 @@ export const OrderConfirmation = () => {
 									successLabel={t("fulfillmentSuccess")}
 									pendingLabel={t("fulfillmentPending")}
 									failureLabel={t("fulfillmentFailureCode")}
-									voucherLabel={t("retryVoucher")}
 								/>
 
 								<div className="overflow-hidden rounded-lg border border-border">

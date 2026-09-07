@@ -335,9 +335,8 @@
 			"timeline": "Order Timeline",
 			"fulfillmentResultTitle": "Digital delivery",
 			"fulfillmentSuccess": "Your top-up was completed.",
-			"fulfillmentPending": "The top-up needs manual processing. Please use the retry code below for a new order.",
-			"fulfillmentFailureCode": "Failure code",
-			"retryVoucher": "One-time retry code"
+			"fulfillmentPending": "Delivery failed. Our team will handle this order manually.",
+			"fulfillmentFailureCode": "Failure code"
 		},
 		"orderStatus": {
 			"UNFULFILLED": "Processing",
@@ -580,9 +579,8 @@
 			"estimatedDelivery": "Estimated delivery",
 			"fulfillmentResultTitle": "Digital delivery",
 			"fulfillmentSuccess": "Your top-up was completed.",
-			"fulfillmentPending": "The top-up needs manual processing. Please use the retry code below for a new order.",
-			"fulfillmentFailureCode": "Failure code",
-			"retryVoucher": "One-time retry code"
+			"fulfillmentPending": "Delivery failed. Our team will handle this order manually.",
+			"fulfillmentFailureCode": "Failure code"
 		},
 		"server": {
 			"marketingSaveFailed": "Failed to save marketing preference",

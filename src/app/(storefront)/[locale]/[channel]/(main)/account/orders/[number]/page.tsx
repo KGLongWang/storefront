@@ -81,7 +81,6 @@ async function OrderDetailContent({ params }: Props) {
 						successLabel={t("fulfillmentSuccess")}
 						pendingLabel={t("fulfillmentPending")}
 						failureLabel={t("fulfillmentFailureCode")}
-						voucherLabel={t("retryVoucher")}
 					/>
 					<div className="rounded-xl border">
 						<div className="border-b px-5 py-4">
