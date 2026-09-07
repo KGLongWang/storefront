@@ -14,6 +14,7 @@ import { formatDate, formatMoney } from "@/lib/utils";
 import { OrderTimeline } from "@/ui/components/account/order-timeline";
 import { OrderStatusBadge } from "@/ui/components/account/order-status-badge";
 import { AccountOrderDetailSkeleton } from "@/ui/components/account/account-skeleton";
+import { OrderFulfillmentResult } from "@/ui/components/order-fulfillment-result";
 import { type AddressDetailsFragment } from "@/gql/graphql";
 
 type Props = {
@@ -74,6 +75,14 @@ async function OrderDetailContent({ params }: Props) {
 
 			<div className="grid gap-6 lg:grid-cols-[1fr_320px]">
 				<div className="space-y-6">
+					<OrderFulfillmentResult
+						metadata={order.metadata}
+						title={t("fulfillmentResultTitle")}
+						successLabel={t("fulfillmentSuccess")}
+						pendingLabel={t("fulfillmentPending")}
+						failureLabel={t("fulfillmentFailureCode")}
+						voucherLabel={t("retryVoucher")}
+					/>
 					<div className="rounded-xl border">
 						<div className="border-b px-5 py-4">
 							<h2 className="text-sm font-semibold">{t("items", { count: itemCount })}</h2>

@@ -332,7 +332,12 @@
 			"needHelp": "Need Help?",
 			"signInRequired": "Sign in to view this order.",
 			"loadFailed": "We couldn't load this order. Please try again.",
-			"timeline": "Order Timeline"
+			"timeline": "Order Timeline",
+			"fulfillmentResultTitle": "Digital delivery",
+			"fulfillmentSuccess": "Your top-up was completed.",
+			"fulfillmentPending": "The top-up needs manual processing. Please use the retry code below for a new order.",
+			"fulfillmentFailureCode": "Failure code",
+			"retryVoucher": "One-time retry code"
 		},
 		"orderStatus": {
 			"UNFULFILLED": "Processing",
@@ -572,7 +577,12 @@
 			"emailSent": "Confirmation email sent",
 			"shippingAddress": "Shipping address",
 			"billingAddress": "Billing address",
-			"estimatedDelivery": "Estimated delivery"
+			"estimatedDelivery": "Estimated delivery",
+			"fulfillmentResultTitle": "Digital delivery",
+			"fulfillmentSuccess": "Your top-up was completed.",
+			"fulfillmentPending": "The top-up needs manual processing. Please use the retry code below for a new order.",
+			"fulfillmentFailureCode": "Failure code",
+			"retryVoucher": "One-time retry code"
 		},
 		"server": {
 			"marketingSaveFailed": "Failed to save marketing preference",

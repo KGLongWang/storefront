@@ -12,6 +12,7 @@ import { OrderConfirmationPageShell } from "./order-confirmation-page-shell";
 import { PageNotFound } from "@/checkout/views/page-not-found";
 import { useTranslations } from "next-intl";
 import { getLocaleDefinition } from "@/config/locale";
+import { OrderFulfillmentResult } from "@/ui/components/order-fulfillment-result";
 
 /** Format address for display */
 function formatAddress(address: {
@@ -81,6 +82,15 @@ export const OrderConfirmation = () => {
 										<h1 className="mt-1 text-balance text-h1">{t("thankYou")}</h1>
 									</div>
 								</div>
+
+								<OrderFulfillmentResult
+									metadata={order.metadata}
+									title={t("fulfillmentResultTitle")}
+									successLabel={t("fulfillmentSuccess")}
+									pendingLabel={t("fulfillmentPending")}
+									failureLabel={t("fulfillmentFailureCode")}
+									voucherLabel={t("retryVoucher")}
+								/>
 
 								<div className="overflow-hidden rounded-lg border border-border">
 									<div className="bg-secondary/50 border-b border-border p-4">

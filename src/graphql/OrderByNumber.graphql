@@ -2,6 +2,10 @@ fragment OrderFullDetails on Order {
 	id
 	number
 	created
+	metadata {
+		key
+		value
+	}
 	status
 	statusDisplay
 	paymentStatus

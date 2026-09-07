@@ -2,6 +2,10 @@ fragment OrderDetails on Order {
 	id
 	number
 	created
+	metadata {
+		key
+		value
+	}
 	total {
 		gross {
 			amount
