@@ -1,7 +1,7 @@
-import { type UserDetailsFragment } from "@/gql/graphql";
+import type { HeaderUser } from "@/lib/auth/get-header-user";
 
 type Props = {
-	user: UserDetailsFragment;
+	user: HeaderUser;
 };
 
 export const UserInfo = ({ user }: Props) => {

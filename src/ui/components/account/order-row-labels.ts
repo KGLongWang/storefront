@@ -1,4 +1,4 @@
-import type { OrderDetailsFragment } from "@/gql/graphql";
+import type { AibibuOrder } from "@/lib/auth/aibibu-store-client";
 import { getCustomerOrderStatusLabel } from "./order-status-labels";
 
 export type OrderRowLabels = {
@@ -17,13 +17,13 @@ type AccountOrderTranslator = (
 export function buildOrderRowLabels(
 	t: AccountOrderTranslator,
 	tStatus: (key: OrderStatusLabelKey) => string,
-	order: OrderDetailsFragment,
+	order: AibibuOrder,
 ): OrderRowLabels {
 	const itemCount = order.lines.reduce((sum, l) => sum + l.quantity, 0);
 
 	return {
 		orderNumber: t("orders.orderNumber", { number: order.number }),
 		itemCount: t("common.itemCount", { count: itemCount }),
-		statusLabel: getCustomerOrderStatusLabel(tStatus, order.status, order.statusDisplay),
+		statusLabel: getCustomerOrderStatusLabel(tStatus, order.status, order.status_display),
 	};
 }

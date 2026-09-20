@@ -163,6 +163,7 @@
 		},
 		"fields": {
 			"email": "Email",
+			"verificationCode": "Verification code",
 			"emailAddress": "Email address",
 			"password": "Password",
 			"firstName": "First name",
@@ -194,6 +195,7 @@
 		},
 		"placeholders": {
 			"email": "you@example.com",
+			"verificationCode": "6-digit code",
 			"password": "Enter your password",
 			"firstName": "First name",
 			"lastName": "Last name",
@@ -221,6 +223,7 @@
 		},
 		"errors": {
 			"invalidEmail": "Please enter a valid email address",
+			"invalidOtp": "Enter the 6-digit code from your email",
 			"invalidEmailFirst": "Please enter a valid email address first",
 			"passwordRequired": "Please enter your password",
 			"passwordMinLength": "Password must be at least 8 characters",
@@ -250,6 +253,19 @@
 		},
 		"login": {
 			"title": "Welcome Back",
+			"frameTitle": "Aibibu account sign in",
+			"connecting": "Connecting to Aibibu…",
+			"processingAuthorization": "Completing sign in…",
+			"authUnavailable": "Aibibu sign in is temporarily unavailable. Please try again.",
+			"invalidAuthorization": "The sign-in request could not be verified. Please start again.",
+			"authorizationCancelled": "Sign in was cancelled.",
+			"retryAuthorization": "Try again",
+			"continue": "Continue",
+			"checking": "Checking…",
+			"changeEmail": "Use another email",
+			"otpSent": "Enter the code sent to your email.",
+			"verify": "Verify and sign in",
+			"verifying": "Verifying…",
 			"noAccount": "Don't have an account?",
 			"signUp": "Sign up",
 			"forgotPassword": "Forgot password?",

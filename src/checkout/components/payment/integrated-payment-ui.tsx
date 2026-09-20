@@ -5,6 +5,7 @@ import { type AddressFragment, type CheckoutFragment } from "@/checkout/graphql"
 import { isIntegratedPaymentProvider, type ResolvedPaymentProvider } from "@/checkout/lib/payment";
 import { type CheckoutPriceChangeNotice } from "@/checkout/lib/payment/checkout-pay-amount";
 import { DummyPaymentPlaceholder } from "./dummy-payment-placeholder";
+import { EpayPayment } from "./epay/epay-payment";
 import { StripePayment } from "./stripe/stripe-payment";
 import { type BillingAddressData } from "./billing-address-section";
 
@@ -43,6 +44,21 @@ export const IntegratedPaymentUi: FC<IntegratedPaymentUiProps> = ({
 	}
 
 	switch (provider.type) {
+		case "epay":
+			if (!checkout || !billing || !onPaymentError || !onBillingErrors || !onPriceChangeNotice) {
+				return null;
+			}
+
+			return (
+				<EpayPayment
+					checkout={checkout}
+					billing={billing}
+					onPaymentError={onPaymentError}
+					onBillingErrors={onBillingErrors}
+					onPriceChangeNotice={onPriceChangeNotice}
+					onPaymentActivityChange={onPaymentActivityChange}
+				/>
+			);
 		case "dummy":
 			return <DummyPaymentPlaceholder gatewayName={provider.gateway.name} />;
 		case "stripe":

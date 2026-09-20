@@ -16,6 +16,18 @@ export {
 	type PaymentGatewayLike,
 } from "./types";
 export {
+	EPAY_GATEWAY_ID,
+	isEpayGateway,
+	findEpayGateway,
+	isEpayPaymentEnabled,
+	getEpayPaymentGuardError,
+	getEpayPayUrl,
+	getEpayTransactionError,
+	parseEpayTransactionData,
+	type EpayPaymentMethod,
+	type EpayTransactionData,
+} from "./providers/epay";
+export {
 	STRIPE_GATEWAY_ID,
 	isStripeGateway,
 	findStripeGateway,

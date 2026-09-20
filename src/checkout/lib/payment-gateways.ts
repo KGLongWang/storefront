@@ -23,6 +23,7 @@ export { hasUnsupportedPaymentGateway, isIgnorableGateway } from "@/checkout/lib
 type GatewayLike = Pick<PaymentGatewayFragment, "id" | "name">;
 
 export type PaymentGatewayStatus =
+	| { kind: "epay"; gateway: GatewayLike }
 	| { kind: "dummy"; gateway: GatewayLike }
 	| { kind: "stripe"; gateway: GatewayLike }
 	| { kind: "none" }
@@ -36,6 +37,8 @@ export function resolvePaymentGatewayStatus(
 	const provider = resolvePaymentProvider(gateways);
 
 	switch (provider.type) {
+		case "epay":
+			return { kind: "epay", gateway: provider.gateway };
 		case "dummy":
 			return { kind: "dummy", gateway: provider.gateway };
 		case "stripe":

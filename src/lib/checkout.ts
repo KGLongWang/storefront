@@ -5,6 +5,7 @@ import { CheckoutCreateDocument, CheckoutCustomerDetachDocument, CheckoutFindDoc
 import { type CartCheckout, withTranslatedCartCheckout } from "@/lib/cart-checkout";
 import { checkoutGraphqlLocaleVariables } from "@/lib/checkout-locale";
 import { executeAuthenticatedGraphQL, executePublicGraphQL } from "@/lib/graphql";
+import { createAibibuStoreCheckout } from "@/lib/auth/aibibu-server-session";
 
 /** Checkout id from this channel's cart cookie (`checkoutId-{channel}`). */
 export async function getIdFromCookies(channel: string) {
@@ -142,6 +143,12 @@ export async function findOrCreate({
 	localeSlug?: string;
 }) {
 	if (!checkoutId) {
+		const aibibuCheckout = await createAibibuStoreCheckout([]);
+		if ("ok" in aibibuCheckout) {
+			return aibibuCheckout.ok ? find(aibibuCheckout.data.id, localeSlug) : null;
+		}
+		if (aibibuCheckout.status === "unavailable") return null;
+
 		const result = await create({ channel, localeSlug });
 		return result.ok ? result.data.checkoutCreate?.checkout : null;
 	}

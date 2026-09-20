@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { type OrderDetailsFragment } from "@/gql/graphql";
+import type { AibibuOrder } from "@/lib/auth/aibibu-store-client";
 import { LinkWithChannel } from "@/ui/atoms/link-with-channel";
 import { formatDate, formatMoney } from "@/lib/utils";
 import { resolveLocaleFromSlug } from "@/config/locale";
@@ -9,7 +9,7 @@ import { type OrderRowLabels } from "./order-row-labels";
 import { accountRoutes } from "./routes";
 
 type Props = {
-	order: OrderDetailsFragment;
+	order: AibibuOrder;
 	localeSlug: string;
 	labels: OrderRowLabels;
 };
@@ -18,8 +18,8 @@ export function OrderRow({ order, localeSlug, labels }: Props) {
 	const intlLocale = resolveLocaleFromSlug(localeSlug).bcp47;
 
 	const thumbnails = order.lines
-		.filter((l) => l.variant?.product.thumbnail)
-		.map((l) => l.variant!.product.thumbnail!)
+		.filter((line) => line.thumbnail_url)
+		.map((line) => ({ url: line.thumbnail_url, alt: line.product_name }))
 		.slice(0, 3);
 
 	const style = orderStatusStyle[order.status] ?? defaultStatusStyle;
@@ -28,13 +28,13 @@ export function OrderRow({ order, localeSlug, labels }: Props) {
 	return (
 		<LinkWithChannel
 			href={accountRoutes.orderDetail(order.number)}
-			className="hover:bg-secondary/30 flex items-center gap-4 rounded-lg border px-5 py-4 transition-colors"
+			className="flex items-center gap-4 rounded-lg border px-5 py-4 transition-colors hover:bg-secondary/30"
 		>
 			<div className="flex -space-x-3">
 				{thumbnails.map((thumb, i) => (
 					<div
 						key={i}
-						className="bg-secondary/40 h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 border-background"
+						className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 border-background bg-secondary/40"
 					>
 						<Image
 							src={thumb.url}
@@ -67,7 +67,7 @@ export function OrderRow({ order, localeSlug, labels }: Props) {
 					<span className="hidden sm:inline">{labels.statusLabel}</span>
 				</span>
 				<span className="text-sm font-semibold tabular-nums">
-					{formatMoney(order.total.gross.amount, order.total.gross.currency, intlLocale)}
+					{formatMoney(order.total.amount, order.total.currency, intlLocale)}
 				</span>
 				<ArrowRight className="h-4 w-4 text-muted-foreground" />
 			</div>

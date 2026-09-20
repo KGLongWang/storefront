@@ -36,13 +36,6 @@ interface ContactSectionProps {
 	onEmailBlur: () => void;
 	emailError?: string;
 
-	// Create account state (guests)
-	createAccount: boolean;
-	onCreateAccountChange: (value: boolean) => void;
-	password: string;
-	onPasswordChange: (value: string) => void;
-	passwordError?: string;
-
 	// Subscribe state (guests)
 	subscribeNews: boolean;
 	onSubscribeChange: (value: boolean) => void;
@@ -63,11 +56,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
 	onEmailChange,
 	onEmailBlur,
 	emailError,
-	createAccount,
-	onCreateAccountChange,
-	password,
-	onPasswordChange,
-	passwordError,
 	subscribeNews,
 	onSubscribeChange,
 }) => {
@@ -98,11 +86,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
 						onEmailBlur={onEmailBlur}
 						emailError={emailError}
 						onSignInClick={onSignInClick}
-						createAccount={createAccount}
-						onCreateAccountChange={onCreateAccountChange}
-						password={password}
-						onPasswordChange={onPasswordChange}
-						passwordError={passwordError}
 					/>
 
 					{isCheckoutMarketingConsentEnabled() && (

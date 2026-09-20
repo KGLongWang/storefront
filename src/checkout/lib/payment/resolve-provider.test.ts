@@ -83,6 +83,15 @@ describe("resolvePaymentProvider", () => {
 		});
 	});
 
+	it("prefers Epay and treats it as a client-submit provider", () => {
+		vi.stubEnv("NODE_ENV", "development");
+		const epay = { id: "app.linkflow.epay", name: "Epay" };
+		const provider = resolvePaymentProvider([{ id: "saleor.app.payment.stripe", name: "Stripe" }, epay]);
+
+		expect(provider).toEqual({ type: "epay", gateway: epay, submitMode: "client" });
+		expect(usesClientPaymentSubmit(provider)).toBe(true);
+	});
+
 	it("returns none for an empty gateway list", () => {
 		expect(resolvePaymentProvider([])).toEqual({ type: "none" });
 	});
@@ -106,6 +115,13 @@ describe("resolvePaymentProvider", () => {
 
 describe("usesClientPaymentSubmit", () => {
 	it("is true only for client-submit providers", () => {
+		expect(
+			usesClientPaymentSubmit({
+				type: "epay",
+				gateway: { id: "app.linkflow.epay", name: "Epay" },
+				submitMode: "client",
+			}),
+		).toBe(true);
 		expect(
 			usesClientPaymentSubmit({
 				type: "stripe",
@@ -133,6 +149,13 @@ describe("canSubmitPayment", () => {
 				submitMode: "server",
 			}),
 		).toBe(true);
+		expect(
+			canSubmitPayment({
+				type: "epay",
+				gateway: { id: "app.linkflow.epay", name: "Epay" },
+				submitMode: "client",
+			}),
+		).toBe(false);
 		expect(
 			canSubmitPayment({
 				type: "stripe",

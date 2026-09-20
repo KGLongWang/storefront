@@ -17,6 +17,12 @@ export async function executePayment(
 	}
 
 	switch (provider.type) {
+		case "epay":
+			return {
+				ok: false,
+				error: "Epay is handled by the payment method section above.",
+				errorKey: "payment",
+			};
 		case "dummy":
 			return executeDummyPayment(context, provider.gateway.id, messages);
 		case "stripe":

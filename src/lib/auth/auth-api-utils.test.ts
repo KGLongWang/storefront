@@ -25,6 +25,10 @@ describe("httpStatusForAuthErrors", () => {
 		expect(httpStatusForAuthErrors([{ message: "Slow down", code: "RATE_LIMITED" }])).toBe(429);
 	});
 
+	it("returns 503 when the identity service is unavailable", () => {
+		expect(httpStatusForAuthErrors([{ message: "Try again later", code: "UNAVAILABLE" }])).toBe(503);
+	});
+
 	it("returns 400 for other validation errors", () => {
 		expect(httpStatusForAuthErrors([{ message: "Required", code: AccountErrorCode.Required }])).toBe(400);
 	});

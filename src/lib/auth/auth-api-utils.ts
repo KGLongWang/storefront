@@ -13,6 +13,7 @@ const FORBIDDEN_AUTH_CODES = new Set<string>([
 ]);
 
 const RATE_LIMIT_CODES = new Set<string>([AccountErrorCode.LoginAttemptDelayed, "RATE_LIMITED"]);
+const UNAVAILABLE_CODES = new Set<string>(["UNAVAILABLE"]);
 
 export function isInvalidCredentialsError(code?: string | null): boolean {
 	if (!code) {
@@ -24,6 +25,10 @@ export function isInvalidCredentialsError(code?: string | null): boolean {
 
 /** Map Saleor auth error codes to HTTP status for BFF routes. */
 export function httpStatusForAuthErrors(errors: AuthApiError[]): number {
+	if (errors.some((error) => UNAVAILABLE_CODES.has(error.code ?? ""))) {
+		return 503;
+	}
+
 	if (errors.some((error) => RATE_LIMIT_CODES.has(error.code ?? ""))) {
 		return 429;
 	}
