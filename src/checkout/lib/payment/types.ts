@@ -22,6 +22,7 @@ export type PaymentContext = {
 };
 
 type IntegratedPaymentProvider =
+	| { type: "wallet"; gateway: PaymentGatewayLike; submitMode: PaymentSubmitMode }
 	| { type: "epay"; gateway: PaymentGatewayLike; submitMode: PaymentSubmitMode }
 	| { type: "stripe"; gateway: PaymentGatewayLike; submitMode: PaymentSubmitMode }
 	| { type: "dummy"; gateway: PaymentGatewayLike; submitMode: PaymentSubmitMode };
@@ -46,5 +47,10 @@ export type TransactionInitializePayload =
 export function isIntegratedPaymentProvider(
 	provider: ResolvedPaymentProvider,
 ): provider is IntegratedPaymentProvider {
-	return provider.type === "epay" || provider.type === "stripe" || provider.type === "dummy";
+	return (
+		provider.type === "wallet" ||
+		provider.type === "epay" ||
+		provider.type === "stripe" ||
+		provider.type === "dummy"
+	);
 }

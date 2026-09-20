@@ -58,6 +58,7 @@ fragment ShippingFragment on ShippingMethod {
 }
 
 fragment OrderFragment on Order {
+	status
 	id
 	number
 	userEmail

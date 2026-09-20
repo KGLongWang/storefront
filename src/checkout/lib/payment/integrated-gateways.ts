@@ -1,3 +1,4 @@
+import { findWalletGateway, isWalletGateway, isWalletPaymentEnabled } from "./providers/wallet";
 import {
 	findDummyGateway,
 	isDummyGateway,
@@ -14,7 +15,7 @@ import { type PaymentGatewayLike, type PaymentSubmitMode } from "./types";
 /** Built-in gateways this UI does not integrate with but should not block checkout. */
 export const IGNORABLE_GATEWAY_IDS = ["saleor.io.gift-card-payment-gateway"] as const;
 
-export type IntegratedGatewayType = "epay" | "stripe" | "dummy";
+export type IntegratedGatewayType = "epay" | "wallet" | "stripe" | "dummy";
 
 type IntegratedGatewayDefinition = {
 	type: IntegratedGatewayType;
@@ -42,6 +43,13 @@ export const INTEGRATED_GATEWAYS: readonly IntegratedGatewayDefinition[] = [
 		findGateway: (gateways) => findStripeGateway(gateways),
 		isEnabled: isStripePaymentEnabled,
 		matchesGateway: (gateway) => isStripeGateway(gateway.id),
+	},
+	{
+		type: "wallet",
+		submitMode: "client",
+		findGateway: findWalletGateway,
+		isEnabled: isWalletPaymentEnabled,
+		matchesGateway: (gateway) => isWalletGateway(gateway.id),
 	},
 	{
 		type: "dummy",

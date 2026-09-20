@@ -84,15 +84,17 @@ export const OrderConfirmation = () => {
 								</div>
 
 								<OrderFulfillmentResult
+									orderStatus={order.status}
 									metadata={order.metadata}
 									title={t("fulfillmentResultTitle")}
 									successLabel={t("fulfillmentSuccess")}
 									pendingLabel={t("fulfillmentPending")}
+									manualLabel={t("fulfillmentNeedsReview")}
 									failureLabel={t("fulfillmentFailureCode")}
 								/>
 
 								<div className="overflow-hidden rounded-lg border border-border">
-									<div className="bg-secondary/50 border-b border-border p-4">
+									<div className="border-b border-border bg-secondary/50 p-4">
 										<h2 className="font-semibold">{t("confirmedTitle")}</h2>
 										<p className="mt-1 text-sm text-muted-foreground">{t("confirmedEmail", { email })}</p>
 									</div>

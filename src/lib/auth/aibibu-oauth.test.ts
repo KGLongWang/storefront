@@ -33,7 +33,7 @@ describe("Aibibu OAuth browser messages", () => {
 		};
 
 		expect(isAibibuAuthSuccessMessage(message, "random-state")).toBe(true);
-		expect(isAibibuAuthCallbackMessage(message)).toBe(false);
+		expect(isAibibuOAuthCallbackMessage(message)).toBe(false);
 	});
 
 	it("rejects standalone messages with a missing or mismatched state when one is expected", () => {

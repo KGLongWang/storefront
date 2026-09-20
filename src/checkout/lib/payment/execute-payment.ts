@@ -17,6 +17,8 @@ export async function executePayment(
 	}
 
 	switch (provider.type) {
+		case "wallet":
+			return { ok: false, error: "请在账户余额区域完成邮箱验证。", errorKey: "payment" };
 		case "epay":
 			return {
 				ok: false,

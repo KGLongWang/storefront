@@ -351,7 +351,8 @@
 			"timeline": "Order Timeline",
 			"fulfillmentResultTitle": "Digital delivery",
 			"fulfillmentSuccess": "Your top-up was completed.",
-			"fulfillmentPending": "Delivery failed. Our team will handle this order manually.",
+			"fulfillmentPending": "Payment received. Your delivery is being processed.",
+			"fulfillmentNeedsReview": "Delivery failed. Our team will handle this order manually.",
 			"fulfillmentFailureCode": "Failure code"
 		},
 		"orderStatus": {
@@ -595,7 +596,8 @@
 			"estimatedDelivery": "Estimated delivery",
 			"fulfillmentResultTitle": "Digital delivery",
 			"fulfillmentSuccess": "Your top-up was completed.",
-			"fulfillmentPending": "Delivery failed. Our team will handle this order manually.",
+			"fulfillmentPending": "Payment received. Your delivery is being processed.",
+			"fulfillmentNeedsReview": "Delivery failed. Our team will handle this order manually.",
 			"fulfillmentFailureCode": "Failure code"
 		},
 		"server": {

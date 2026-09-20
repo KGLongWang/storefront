@@ -54,10 +54,12 @@ async function OrderDetailContent({ params }: Props) {
 			</div>
 
 			<OrderFulfillmentResult
+				orderStatus={order.status}
 				metadata={order.metadata ?? []}
 				title={t("fulfillmentResultTitle")}
 				successLabel={t("fulfillmentSuccess")}
 				pendingLabel={t("fulfillmentPending")}
+				manualLabel={t("fulfillmentNeedsReview")}
 				failureLabel={t("fulfillmentFailureCode")}
 			/>
 

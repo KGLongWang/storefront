@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/preserve-manual-memoization -- large submit handler; refactor separately */
 
 import { useState, useCallback, useEffect, useMemo, type FC } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { syncAuthSurfacesAfterSignIn } from "@/lib/auth";
 import { isCheckoutMarketingConsentEnabled } from "@/checkout/lib/marketing-consent";
 import { Button } from "@/ui/components/ui/button";

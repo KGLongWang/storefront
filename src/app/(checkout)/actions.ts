@@ -1,5 +1,6 @@
 "use server";
 
+import { getWalletPaymentGuardError } from "@/checkout/lib/payment/providers/wallet";
 import { after } from "next/server";
 import {
 	AddressValidationRulesDocument,
@@ -435,6 +436,8 @@ export async function initializeCheckoutTransaction(
 ): Promise<TransactionInitializeActionResult> {
 	const { server: t } = await getCheckoutServerTranslations();
 
+	const walletGuardError = getWalletPaymentGuardError(variables.paymentGateway?.id);
+	if (walletGuardError) return { ok: false, error: walletGuardError };
 	const dummyGuardError = getDummyPaymentGuardError(variables.paymentGateway?.id);
 	if (dummyGuardError) {
 		return { ok: false, error: t("dummyNotAllowed") };

@@ -45,7 +45,10 @@ export function resolvePaymentProvider(
 
 /** Client-driven gateways render their own Pay button (e.g. Stripe Elements). */
 export function usesClientPaymentSubmit(provider: ResolvedPaymentProvider): boolean {
-	return provider.type === "epay" || provider.type === "stripe" || provider.type === "dummy"
+	return provider.type === "wallet" ||
+		provider.type === "epay" ||
+		provider.type === "stripe" ||
+		provider.type === "dummy"
 		? provider.submitMode === "client"
 		: false;
 }
